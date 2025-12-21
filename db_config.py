@@ -4,8 +4,8 @@ from mysql.connector import Error
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'Ansari8088',
-    'database': 'rehab_center_db'  # Updated database name
+    'password': 'your_password',
+    'database': 'rehab_center_db'
 }
 
 def get_db_connection():
