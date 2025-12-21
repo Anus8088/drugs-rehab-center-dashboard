@@ -1027,7 +1027,6 @@ def record_dose():
     
     if request.method == "POST":
         try:
-            # ❌ NO start_transaction here
             
             cursor.execute("""
                 SELECT stock_quantity 
