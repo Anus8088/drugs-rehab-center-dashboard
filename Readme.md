@@ -130,10 +130,3 @@ http://127.0.0.1:5000
 **Anas Ansari**
 RehabCare Pro – 2025
 
----
-
-⭐ If you like this project, feel free to improve or extend it!
-
-
-Kya wo bhi chahiye?
-```
