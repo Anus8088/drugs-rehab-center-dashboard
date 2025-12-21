@@ -37,7 +37,6 @@ project/
 │── README.md
 │── templates/
 │── static/
-│── venv/
 ```
 
 ---
@@ -49,14 +48,6 @@ project/
 ```bash
 git clone <your-repo-url>
 cd project
-```
-
-### 2️⃣ Create Virtual Environment (Recommended)
-
-```bash
-python -m venv venv
-venv\Scripts\activate   # Windows
-# source venv/bin/activate  # Linux/Mac
 ```
 
 ### 3️⃣ Install Requirements
