@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patients List | RehabCare+</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <div class="sidebar" id="sidebar">
+        <h4>RehabCare+</h4>
+
+        <a href="/dashboard">🏠 Dashboard</a>
+        <a href="/add_patient">➕ Add Patient</a>
+        <a href="/patients" class="active">🧍 Patients List</a>
+        <a href="/rooms">🛏 Rooms</a>
+        <a href="/billing">💳 Billing</a>
+        <a href="/medicine_history">💊 Medicine History</a>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+
+    <div class="content">
+
+        <div class="navbar-custom">
+            <span class="nav-title">Registered Patients List</span>
+            <button class="btn-outline btn-custom" onclick="toggleSidebar()">☰</button>
+        </div>
+
+        <div class="card-custom" style="margin-top:20px; padding: 30px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0;">All Patients Records</h3>
+                <a href="/add_patient" class="btn-invoice" style="text-decoration: none;">➕ Add New Patient</a>
+            </div>
+
+            <input type="text" id="search" class="form-control" placeholder="Search patient by name or code...">
+            
+            <div class="table-scroll">
+                <table class="table-custom" style="margin-top:15px;">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Patient Code</th> <th>Branch</th>
+                            <th>Admission Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="patientTable">
+                        {% for p in patients %}
+                        <tr>
+                            <td>{{ p.PATIENT_ID }}</td> 
+                            <td>{{ p.FULL_NAME }}</td> 
+                            <td>{{ p.PATIENT_CODE }}</td> 
+                            <td>{{ p.BRANCH_NAME }}</td> 
+                            <td>{{ p.ADMISSION_DATE }}</td> 
+                            <td>
+                                <span class="status-{{ p.STATUS | lower }}">{{ p.STATUS }}</span>
+                            </td>
+                            <td>
+                                <a href="/view_patient/{{ p.PATIENT_ID }}" class="action-btn view-btn" style="text-decoration:none; color:white;">View</a> 
+                                <a href="/edit_patient/{{ p.PATIENT_ID }}" class="action-btn edit-btn" style="text-decoration:none;">Edit</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+        </div>
+
+    </div>
+
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

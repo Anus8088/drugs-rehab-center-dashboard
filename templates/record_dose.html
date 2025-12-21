@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record New Dose | RehabCare+</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <div class="sidebar" id="sidebar">
+        <h4>RehabCare+</h4>
+        <a href="/dashboard">🏠 Dashboard</a>
+        <a href="/add_patient">➕ Add Patient</a>
+        <a href="/patients">🧍 Patients List</a>
+        <a href="/rooms">🛏 Rooms</a>
+        <a href="/billing">💳 Billing</a>
+        <a href="/medicine_history" class="active">💊 Medicine History</a>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+
+    <div class="content">
+
+        <div class="navbar-custom">
+            <span class="nav-title">Record Patient Medication Administration</span>
+            <button class="btn-outline btn-custom" onclick="toggleSidebar()">☰</button>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card-custom" style="padding: 30px;">
+            <h3 style="margin-bottom: 25px; color: #FBBF24;">Record New Dose</h3>
+
+            <form action="/record_dose" method="POST" class="patient-form">
+                
+                <h4 class="form-section-title">🧍 Patient & Medicine Selection</h4>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Select Patient</label>
+                        <select name="patient_id" required>
+                            <option value="">-- Choose Patient --</option>
+                            {% for patient in patients %}
+                            <option value="{{ patient.PATIENT_ID }}"
+                                {% if patient_id and patient_id | int == patient.PATIENT_ID %}selected{% endif %}>
+                                {{ patient.FULL_NAME }} (Code: {{ patient.PATIENT_CODE }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Select Medicine</label>
+                        <select name="medicine_id" required>
+                            <option value="">-- Choose Medicine --</option>
+                            {% for med in medicine %}
+                            <option value="{{ med.MEDICINE_ID }}">{{ med.MEDICINE_NAME }} (Stock: {{ med.CURRENT_STOCK }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <h4 class="form-section-title">📝 Dosage & Staff Details</h4>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Dosage</label>
+                        <input type="text" name="dosage" placeholder="e.g. 1 Tablet / 50 mg" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Administered By (Staff Name)</label>
+                        <input type="text" name="administered_by" placeholder="e.g. Nurse Ayesha / Dr. Sana" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Date of Administration</label>
+                        <input type="date" name="admin_date" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Time of Administration</label>
+                        <input type="time" name="admin_time" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit" style="background: #FBBF24; color: var(--darker-blue);">✅ Record Dose</button>
+                
+                <a href="/medicine_history" class="btn-submit" style="background: var(--dark-blue); margin-top: 15px; display: block; text-align: center; text-decoration: none;">⬅️ Back to Medicine History</a>
+
+            </form>
+        </div>
+
+    </div>
+
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

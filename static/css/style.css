@@ -1,0 +1,391 @@
+:root {
+    --primary-blue: #3B82F6;
+    --secondary-green: #10B981;
+    --accent-yellow: #FBBF24;
+    --alert-red: #EF4444;
+    
+    --main-bg: #0F172A;
+    --sidebar-bg: #1E293B;
+    --card-bg: #1E293B;
+    --dark-blue: #334155;
+    --darker-blue: #0F172A;
+    
+    --text-light: #F8FAFC;
+    --text-muted: #94A3B8;
+    
+    --padding-base: 20px;
+    --radius-base: 8px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background-color: var(--main-bg);
+    color: var(--text-light);
+    line-height: 1.6;
+}
+
+a {
+    color: var(--primary-blue);
+    text-decoration: none;
+}
+
+h1, h2, h3, h4, h5 {
+    color: var(--text-light);
+}
+
+.row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+/* -------------------- LAYOUT -------------------- */
+
+.sidebar {
+    width: 250px;
+    height: 100vh;
+    background-color: var(--sidebar-bg);
+    padding: var(--padding-base);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    transition: transform 0.3s ease-in-out;
+}
+
+@media (max-width: 900px) {
+    .sidebar {
+        transform: translateX(-250px);
+    }
+    .sidebar.active {
+        transform: translateX(0);
+    }
+    .content {
+        margin-left: 0 !important;
+    }
+}
+
+.sidebar h4 {
+    color: var(--secondary-green);
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 1.5em;
+    font-weight: 800;
+}
+
+.sidebar a {
+    display: block;
+    color: var(--text-muted);
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    border-radius: var(--radius-base);
+    transition: background-color 0.2s, color 0.2s;
+    font-size: 1.05em;
+}
+
+.sidebar a:hover,
+.sidebar a.active {
+    background-color: var(--dark-blue);
+    color: var(--text-light);
+}
+
+.content {
+    margin-left: 250px;
+    padding: var(--padding-base);
+    transition: margin-left 0.3s ease-in-out;
+}
+
+/* Navbar */
+.navbar-custom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--sidebar-bg);
+    padding: 15px 25px;
+    border-radius: var(--radius-base);
+    margin-bottom: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.nav-title {
+    font-size: 1.4em;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+.btn-custom {
+    background: none;
+    border: 1px solid var(--text-muted);
+    color: var(--text-muted);
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+@media (min-width: 901px) {
+    .btn-custom {
+        display: none;
+    }
+}
+
+/* -------------------- COMPONENTS -------------------- */
+
+.card-custom {
+    background-color: var(--card-bg);
+    padding: var(--padding-base);
+    border-radius: var(--radius-base);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+/* Forms and Inputs */
+.patient-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-section-title {
+    color: var(--primary-blue);
+    margin-top: 15px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--dark-blue);
+}
+
+.form-row {
+    display: flex;
+    gap: 20px;
+}
+
+.input-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.input-group label {
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.input-group input[type="text"],
+.input-group input[type="number"],
+.input-group input[type="date"],
+.input-group input[type="time"],
+.input-group select,
+.input-group textarea {
+    padding: 12px;
+    border: 1px solid var(--dark-blue);
+    background-color: var(--dark-blue);
+    color: var(--text-light);
+    border-radius: 6px;
+    font-size: 1em;
+    width: 100%;
+    transition: border-color 0.2s;
+}
+
+.input-group input:focus,
+.input-group select:focus,
+.input-group textarea:focus {
+    border-color: var(--primary-blue);
+    outline: none;
+}
+
+textarea {
+    resize: vertical;
+}
+
+/* Buttons */
+.btn-submit {
+    padding: 15px 20px;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--primary-blue);
+    color: var(--text-light);
+    font-size: 1.1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-submit:hover {
+    background-color: #3168d4;
+}
+
+.action-btn {
+    padding: 8px 15px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 5px;
+}
+
+.view-btn {
+    background-color: var(--primary-blue);
+    color: white;
+}
+
+.edit-btn {
+    background-color: var(--accent-yellow);
+    color: var(--darker-blue);
+}
+
+/* -------------------- TABLES & DATA DISPLAY -------------------- */
+
+.table-scroll {
+    overflow-x: auto;
+}
+
+.table-custom {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+}
+
+.table-custom thead {
+    background-color: var(--dark-blue);
+}
+
+.table-custom th {
+    padding: 15px;
+    text-align: left;
+    color: var(--text-light);
+    font-weight: 600;
+    font-size: 0.95em;
+    border: none;
+}
+
+.table-custom td {
+    padding: 15px;
+    background-color: var(--card-bg);
+    color: var(--text-light);
+    border-top: 1px solid var(--dark-blue);
+    border-bottom: 1px solid var(--dark-blue);
+}
+
+.table-custom tbody tr:hover td {
+    background-color: var(--dark-blue);
+}
+
+/* Status Badges */
+.status-admitted,
+.status-active,
+.status-paid,
+.status-pending,
+.status-discharged,
+.status-transfer {
+    padding: 5px 10px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.status-admitted {
+    background-color: #065F46;
+    color: #A7F3D0;
+}
+
+.status-active {
+    background-color: #3730A3;
+    color: #C7D2FE;
+}
+
+.status-discharged {
+    background-color: #4B5563;
+    color: #D1D5DB;
+}
+
+.status-transfer {
+    background-color: #78350F;
+    color: #FDBA74;
+}
+
+.status-pending {
+    background-color: #9A3412;
+    color: #FDBA74;
+}
+
+.status-paid {
+    background-color: #065F46;
+    color: #A7F3D0;
+}
+
+/* -------------------- FLASH MESSAGES -------------------- */
+
+.flash-message {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: var(--radius-base);
+    font-weight: 600;
+    text-align: center;
+}
+
+.flash-success {
+    background-color: #065F46;
+    color: #A7F3D0;
+    border: 1px solid #065F46;
+}
+
+.flash-error, .flash-danger {
+    background-color: #7F1D1D;
+    color: #FEE2E2;
+    border: 1px solid #7F1D1D;
+}
+
+.flash-warning {
+    background-color: #78350F;
+    color: #FDBA74;
+    border: 1px solid #78350F;
+}
+
+/* -------------------- RESPONSIVENESS -------------------- */
+
+@media (max-width: 768px) {
+    .content {
+        padding: 10px;
+    }
+    .form-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+    .invoice-header, .invoice-summary-box {
+        flex-direction: column;
+        gap: 15px;
+    }
+    .sidebar {
+        width: 200px;
+    }
+    .nav-title {
+        font-size: 1.2em;
+    }
+}
+
+/* -------------------- DASHBOARD SPECIFIC STYLES -------------------- */
+
+.page-title {
+    margin-bottom: 20px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.card-custom h4 {
+    color: var(--text-muted);
+    font-size: 0.9em;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.card-custom h1 {
+    font-size: 2.5em;
+    font-weight: 700;
+    margin-top: 5px;
+}

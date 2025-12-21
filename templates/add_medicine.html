@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if medicine %}Restock: {{ medicine.MEDICINE_NAME }}{% else %}Add/Restock Medicine{% endif %} | RehabCare+</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <div class="sidebar" id="sidebar">
+        <h4>RehabCare+</h4>
+        <a href="/dashboard">🏠 Dashboard</a>
+        <a href="/add_patient">➕ Add Patient</a>
+        <a href="/patients">🧍 Patients List</a>
+        <a href="/rooms">🛏 Rooms</a>
+        <a href="/billing">💳 Billing</a>
+        <a href="/medicine_history" class="active">💊 Medicine History</a>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+
+    <div class="content">
+
+        <div class="navbar-custom">
+            <span class="nav-title">
+                {% if medicine %}
+                    Restock: {{ medicine.MEDICINE_NAME }} (ID: {{ medicine.MEDICINE_ID }})
+                {% else %}
+                    Add New Medicine or Restock Inventory
+                {% endif %}
+            </span>
+            <button class="btn-outline btn-custom" onclick="toggleSidebar()">☰</button>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card-custom" style="padding: 30px;">
+            <h3 style="margin-bottom: 25px; color: #10B981;">
+                {% if medicine %}
+                    Current Stock: {{ medicine.CURRENT_STOCK }} {{ medicine.UNIT }}
+                {% else %}
+                    Add New Medicine Item
+                {% endif %}
+            </h3>
+
+            <form action="/add_medicine" method="POST" class="patient-form">
+                
+                {% if medicine %}
+                    <input type="hidden" name="med_id" value="{{ medicine.MEDICINE_ID }}">
+                {% endif %}
+                
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Medicine Name / Description</label>
+                        <input type="text" name="medicine_name" placeholder="e.g. Naltrexone (50mg)" required
+                            value="{{ medicine.MEDICINE_NAME if medicine else '' }}"
+                            {% if medicine %}readonly style="background-color: var(--dark-blue);"{% endif %}>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Unit of Measure</label>
+                        {% if medicine %}
+                            <input type="text" name="unit" value="{{ medicine.UNIT }}" readonly style="background-color: var(--dark-blue);" required>
+                        {% else %}
+                            <select name="unit" required>
+                                <option value="">-- Select Unit --</option>
+                                <option value="Tablets">Tablets/Pills</option>
+                                <option value="Syrup">Syrup (ml)</option>
+                                <option value="Injections">Injections</option>
+                            </select>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Stock Quantity to Add</label>
+                        <input type="number" name="stock_quantity" placeholder="e.g. 150" min="1" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Supplier/Batch Info (Optional)</label>
+                        <input type="text" name="supplier" placeholder="e.g. PharmaCorp Batch 45A">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-submit" style="background: #10B981;">
+                    {% if medicine %}
+                        ➕ Restock & Update
+                    {% else %}
+                        💾 Add New Item
+                    {% endif %}
+                </button>
+                
+                <a href="/medicine_history" class="btn-submit" style="background: var(--dark-blue); margin-top: 15px; display: block; text-align: center; text-decoration: none;">⬅️ Back to Medicine History</a>
+
+            </form>
+        </div>
+
+    </div>
+
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

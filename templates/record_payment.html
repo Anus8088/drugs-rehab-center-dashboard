@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record Payment | Invoice #{{ invoice.invoice_number }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .invoice-info-box {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid #FBBF24;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .invoice-info-box div h5 {
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+        .invoice-info-box div p {
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+        .text-red {
+            color: #EF4444;
+            font-size: 1.4em !important;
+            font-weight: 700 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <h4>RehabCare+</h4>
+        <a href="/dashboard">🏠 Dashboard</a>
+        <a href="/add_patient">➕ Add Patient</a>
+        <a href="/patients">🧍 Patients List</a>
+        <a href="/rooms">🛏 Rooms</a>
+        <a href="/billing" class="active">💳 Billing</a>
+        <a href="/medicine_history">💊 Medicine History</a>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+
+    <div class="content">
+        <div class="navbar-custom">
+            <span class="nav-title">Record Payment - Invoice #{{ invoice.invoice_number }}</span>
+            <button class="btn-outline btn-custom" onclick="toggleSidebar()">☰</button>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card-custom" style="padding: 30px;">
+            <h3 style="margin-bottom: 25px; color: #FBBF24;">Payment Details</h3>
+
+            <div class="invoice-info-box">
+                <div>
+                    <h5>Patient Name</h5>
+                    <p>{{ invoice.full_name }}</p>
+                </div>
+                <div>
+                    <h5>Total Bill Amount</h5>
+                    <p>PKR {{ invoice.bill_amount | int }}</p>
+                </div>
+                <div>
+                    <h5>Pending Amount</h5>
+                    <p class="text-red">PKR {{ invoice.pending_amount | int }}</p>
+                </div>
+            </div>
+
+            <form action="/record_payment/{{ invoice.bill_id }}" method="POST" class="patient-form" id="paymentForm">
+                
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Amount Paid (PKR) *</label>
+                        <input type="number" name="amount_paid" id="amountInput" 
+                               placeholder="e.g. 25000" 
+                               max="{{ invoice.pending_amount }}" 
+                               min="1" 
+                               step="0.01"
+                               required>
+                        <small style="opacity: 0.7; margin-top: 5px; display: block;">
+                            Maximum: PKR {{ invoice.pending_amount | int }}
+                        </small>
+                    </div>
+                    <div class="input-group">
+                        <label>Date of Payment *</label>
+                        <input type="date" name="payment_date" required value="{{ today }}">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Payment Method *</label>
+                    <select name="payment_method" required>
+                        <option value="">-- Select Method --</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Bank Transfer">Bank Transfer (IBFT)</option>
+                        <option value="Cheque">Cheque</option>
+                        <option value="Credit/Debit Card">Credit/Debit Card</option>
+                        <option value="Online">Online Payment</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-submit" style="background: #FBBF24; color: var(--darker-blue);">✅ Record Payment & Update Balance</button>
+                
+                <a href="/view_bill/{{ invoice.bill_id }}" class="btn-submit" style="background: var(--dark-blue); margin-top: 15px; display: block; text-align: center; text-decoration: none;">⬅️ Cancel & Go Back</a>
+
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById("sidebar").classList.toggle("active");
+        }
+
+        // Validation
+        const form = document.getElementById('paymentForm');
+        const amountInput = document.getElementById('amountInput');
+        const maxAmount = {{ invoice.pending_amount }};
+
+        form.addEventListener('submit', function(e) {
+            const amount = parseFloat(amountInput.value);
+            
+            if (amount <= 0) {
+                e.preventDefault();
+                alert('Payment amount must be greater than zero.');
+                return false;
+            }
+            
+            if (amount > maxAmount) {
+                e.preventDefault();
+                alert('Payment amount cannot exceed the pending amount of PKR ' + maxAmount.toFixed(2));
+                return false;
+            }
+            
+            return confirm('Confirm payment of PKR ' + amount.toFixed(2) + '?');
+        });
+
+        // Quick amount buttons
+        function addQuickButtons() {
+            const container = amountInput.parentElement;
+            const quickDiv = document.createElement('div');
+            quickDiv.style.marginTop = '10px';
+            quickDiv.innerHTML = `
+                <small style="opacity: 0.7;">Quick Select: </small>
+                <button type="button" onclick="setAmount(${maxAmount})" style="background: #3B82F6; color: white; border: none; padding: 5px 10px; border-radius: 4px; margin: 0 5px; cursor: pointer;">Full Amount</button>
+                <button type="button" onclick="setAmount(${maxAmount/2})" style="background: #10B981; color: white; border: none; padding: 5px 10px; border-radius: 4px; margin: 0 5px; cursor: pointer;">Half</button>
+            `;
+            container.appendChild(quickDiv);
+        }
+
+        function setAmount(value) {
+            amountInput.value = value.toFixed(2);
+        }
+
+        addQuickButtons();
+    </script>
+</body>
+</html>

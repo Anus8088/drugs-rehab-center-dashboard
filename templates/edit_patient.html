@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Patient | {{ patient.full_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <h4>RehabCare+</h4>
+        <a href="/dashboard">🏠 Dashboard</a>
+        <a href="/add_patient">➕ Add Patient</a>
+        <a href="/patients" class="active">🧍 Patients List</a>
+        <a href="/rooms">🛏 Rooms</a>
+        <a href="/billing">💳 Billing</a>
+        <a href="/medicine_history">💊 Medicine History</a>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+
+    <div class="content">
+        <div class="navbar-custom">
+            <span class="nav-title">Edit Patient: {{ patient.full_name }} (ID: {{ patient.patient_id }})</span>
+            <button class="btn-outline btn-custom" onclick="toggleSidebar()">☰</button>
+        </div>
+
+        <div class="card-custom" style="padding: 30px;">
+            <h3 style="margin-bottom: 25px; color: #FBBF24;">Update Patient Information</h3>
+
+            <form action="/edit_patient/{{ patient.patient_id }}" method="POST" class="patient-form">
+                
+                <h4 class="form-section-title">👤 Personal Details</h4>
+                
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Full Name</label>
+                        <input type="text" name="full_name" value="{{ patient.full_name }}" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Date of Birth</label>
+                        <input type="date" name="dob" value="{{ patient.dob }}" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Gender</label>
+                        <select name="gender" required>
+                            <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
+                            <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Status</label>
+                        <select name="status" required>
+                            <option value="Admitted" {% if patient.status == 'Admitted' %}selected{% endif %}>Admitted</option>
+                            <option value="Discharge-Planned" {% if patient.status == 'Discharge-Planned' %}selected{% endif %}>Discharge-Planned</option>
+                            <option value="Completed" {% if patient.status == 'Completed' %}selected{% endif %}>Completed</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Expected Discharge Date</label>
+                    <input type="date" name="expected_discharge" value="{{ patient.expected_discharge_date }}">
+                </div>
+
+                <h4 class="form-section-title">⚕️ Medical Information</h4>
+
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Primary Addiction</label>
+                        <select name="primary_addiction" required>
+                            <option value="Heroin" {% if patient.primary_addiction == 'Heroin' %}selected{% endif %}>Heroin</option>
+                            <option value="Prescription Opioids" {% if patient.primary_addiction == 'Prescription Opioids' %}selected{% endif %}>Prescription Opioids</option>
+                            <option value="Alcohol" {% if patient.primary_addiction == 'Alcohol' %}selected{% endif %}>Alcohol</option>
+                            <option value="Cannabis" {% if patient.primary_addiction == 'Cannabis' %}selected{% endif %}>Cannabis</option>
+                            <option value="Cocaine" {% if patient.primary_addiction == 'Cocaine' %}selected{% endif %}>Cocaine</option>
+                            <option value="Methamphetamine" {% if patient.primary_addiction == 'Methamphetamine' %}selected{% endif %}>Methamphetamine</option>
+                            <option value="Benzodiazepines" {% if patient.primary_addiction == 'Benzodiazepines' %}selected{% endif %}>Benzodiazepines</option>
+                            <option value="Cigarettes/Nicotine" {% if patient.primary_addiction == 'Cigarettes/Nicotine' %}selected{% endif %}>Cigarettes/Nicotine</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Duration (Months)</label>
+                        <input type="number" name="duration_months" value="{{ patient.duration_of_use_months }}" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Addiction Level</label>
+                    <select name="addiction_level" required>
+                        <option value="Low" {% if patient.addiction_level == 'Low' %}selected{% endif %}>Low</option>
+                        <option value="Moderate" {% if patient.addiction_level == 'Moderate' %}selected{% endif %}>Moderate</option>
+                        <option value="High" {% if patient.addiction_level == 'High' %}selected{% endif %}>High</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Diseases</label>
+                        <textarea name="diseases" rows="2">{{ patient.diseases }}</textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>Allergies</label>
+                        <textarea name="allergies" rows="2">{{ patient.allergies }}</textarea>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Medical Notes</label>
+                    <textarea name="notes" rows="3">{{ patient.notes }}</textarea>
+                </div>
+
+                <h4 class="form-section-title">👨‍👩‍👧 Guardian Information</h4>
+                
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Guardian Name</label>
+                        <input type="text" name="guardian_name" value="{{ patient.guardian_name }}" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Relation</label>
+                        <input type="text" name="guardian_relation" value="{{ patient.guardian_relation }}" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Guardian Phone</label>
+                        <input type="text" name="guardian_phone" value="{{ patient.guardian_phone }}" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Guardian Address</label>
+                        <input type="text" name="guardian_address" value="{{ patient.guardian_address }}">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-submit" style="background: #FBBF24; color: var(--darker-blue);">💾 Update Record</button>
+                <a href="/view_patient/{{ patient.patient_id }}" class="btn-submit" style="background: var(--dark-blue); margin-top: 15px; display: block; text-align: center; text-decoration: none;">⬅️ Back to Patient Profile</a>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

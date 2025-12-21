@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing Management | RehabCare+</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <h4>RehabCare+</h4>
+        <a href="/dashboard">🏠 Dashboard</a>
+        <a href="/add_patient">➕ Add Patient</a>
+        <a href="/patients">🧍 Patients List</a>
+        <a href="/rooms">🛏 Rooms</a>
+        <a href="/billing" class="active">💳 Billing</a>
+        <a href="/medicine_history">💊 Medicine History</a>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+
+    <div class="content">
+        <div class="navbar-custom">
+            <span class="nav-title">Billing & Financial Management</span>
+            <button class="btn-outline btn-custom" onclick="toggleSidebar()">☰</button>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Quick Action Button -->
+        <div style="margin: 20px 0; text-align: right;">
+            <a href="/generate_invoice" class="btn-submit" style="background: #10B981; display: inline-block; text-decoration: none; padding: 12px 24px;">
+                ➕ Generate New Invoice
+            </a>
+        </div>
+
+        <!-- All Bills List -->
+        <div class="card-custom" style="padding: 30px;">
+            <h3 style="margin-bottom: 20px; color: #3B82F6;">All Patient Bills</h3>
+            
+            {% if patients %}
+            <div class="table-scroll">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>Bill ID</th>
+                            <th>Patient Name</th>
+                            <th>Bill Date</th>
+                            <th>Amount Due</th>
+                            <th>Amount Paid</th>
+                            <th>Balance</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bill in patients %}
+                        <tr>
+                            <td>#{{ bill.bill_id }}</td>
+                            <td>
+                                <a href="/view_patient/{{ bill.patient_id }}" style="color: var(--primary-blue);">
+                                    {{ bill.full_name }}
+                                </a>
+                            </td>
+                            <td>{{ bill.bill_date }}</td>
+                            <td>PKR {{ bill.amount_due | int }}</td>
+                            <td>PKR {{ bill.amount_paid | int }}</td>
+                            <td>PKR {{ bill.due_amount | int }}</td>
+                            <td>
+                                <span class="status-{{ bill.status | lower }}">{{ bill.status }}</span>
+                            </td>
+                            <td>
+                                <a href="/view_bill/{{ bill.bill_id }}" class="action-btn view-btn" style="text-decoration: none;">
+                                    View
+                                </a>
+                                {% if bill.due_amount > 0 %}
+                                <a href="/record_payment/{{ bill.bill_id }}" class="action-btn edit-btn" style="text-decoration: none; background: #10B981; color: white;">
+                                    Pay
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p style="text-align: center; color: var(--text-muted); padding: 40px;">
+                No billing records found. <a href="/generate_invoice" style="color: var(--primary-blue);">Generate your first invoice →</a>
+            </p>
+            {% endif %}
+        </div>
+
+        <!-- Recent Payments -->
+        <div class="card-custom" style="margin-top: 30px; padding: 30px;">
+            <h3 style="margin-bottom: 20px; color: #10B981;">Recent Payments (Last 30 Days)</h3>
+            
+            {% if payments %}
+            <div class="table-scroll">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Patient</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in payments %}
+                        <tr>
+                            <td>{{ payment.date }}</td>
+                            <td>{{ payment.patient }}</td>
+                            <td>PKR {{ payment.amount | int }}</td>
+                            <td>{{ payment.type }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p style="text-align: center; color: var(--text-muted); padding: 20px;">
+                No recent payments recorded.
+            </p>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById("sidebar").classList.toggle("active");
+        }
+    </script>
+</body>
+</html>

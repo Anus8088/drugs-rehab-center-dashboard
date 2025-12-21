@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Invoice | RehabCare+</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <h4>RehabCare+</h4>
+        <a href="/dashboard">🏠 Dashboard</a>
+        <a href="/add_patient">➕ Add Patient</a>
+        <a href="/patients">🧍 Patients List</a>
+        <a href="/rooms">🛏 Rooms</a>
+        <a href="/billing" class="active">💳 Billing</a>
+        <a href="/medicine_history">💊 Medicine History</a>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+
+    <div class="content">
+        <div class="navbar-custom">
+            <span class="nav-title">Generate New Patient Invoice</span>
+            <button class="btn-outline btn-custom" onclick="toggleSidebar()">☰</button>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card-custom" style="padding: 30px;">
+            <h3 style="margin-bottom: 25px; color: #10B981;">Create New Financial Record</h3>
+
+            <form action="/generate_invoice" method="POST" class="patient-form">
+                
+                <h4 class="form-section-title">🧑 Patient Selection</h4>
+                
+                <div class="input-group">
+                    <label>Select Patient (Admitted) *</label>
+                    <select name="patient_id" required>
+                        <option value="">-- Choose Patient --</option>
+                        {% for patient in patients %}
+                        <option value="{{ patient.PATIENT_ID }}"
+                            {% if patient_id and patient_id | int == patient.PATIENT_ID %}selected{% endif %}>
+                            {{ patient.FULL_NAME }} (ID: {{ patient.PATIENT_ID }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <h4 class="form-section-title">💰 Invoice Details</h4>
+
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Bill Date *</label>
+                        <input type="date" name="bill_date" required value="{{ today }}">
+                    </div>
+                    <div class="input-group">
+                        <label>Total Amount Due (PKR) *</label>
+                        <input type="number" name="amount_due" placeholder="e.g. 50000" min="1" step="0.01" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Description / Services</label>
+                    <textarea name="description" rows="4" placeholder="e.g., Monthly rehabilitation fee, medication charges, counseling sessions...">Monthly Rehabilitation Services</textarea>
+                </div>
+
+                <button type="submit" class="btn-submit" style="background: #10B981;">💾 Generate & Finalize Invoice</button>
+                
+                <a href="/billing" class="btn-submit" style="background: var(--dark-blue); margin-top: 15px; display: block; text-align: center; text-decoration: none;">⬅️ Back to Billing</a>
+
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById("sidebar").classList.toggle("active");
+        }
+    </script>
+</body>
+</html>
