@@ -440,18 +440,27 @@ def rooms_allocation():
         cursor.execute(rooms_query)
         all_rooms = cursor.fetchall()
         
-        # Get patients for allocation with their branch info
+        # ✅ FIXED: Get patients WITHOUT active room allocation
         patients_query = """
             SELECT p.patient_id, p.full_name, p.patient_code, p.branch_id,
                    b.branch_name
             FROM patients p
             JOIN branches b ON p.branch_id = b.branch_id
-            LEFT JOIN room_allocation ra ON p.patient_id = ra.patient_id AND ra.status = 'Active'
-            WHERE p.status = 'Admitted' AND ra.allocation_id IS NULL
+            LEFT JOIN room_allocation ra ON p.patient_id = ra.patient_id 
+                AND ra.status = 'Active'
+            WHERE p.status = 'Admitted' 
+                AND ra.allocation_id IS NULL
             ORDER BY p.full_name
         """
         cursor.execute(patients_query)
         patients_for_allocation = cursor.fetchall()
+        
+        # ✅ DEBUG: Print patients found
+        print(f"=== PATIENTS FOR ALLOCATION ===")
+        print(f"Found {len(patients_for_allocation)} unallocated patients")
+        for pat in patients_for_allocation:
+            print(f"- {pat['full_name']} (ID: {pat['patient_id']})")
+        print("================================")
         
         # Get occupied patients with room info
         occupied_query = """
@@ -475,10 +484,12 @@ def rooms_allocation():
         cursor.close()
         conn.close()
     
-    return render_template("rooms_allocation.html", all_rooms=all_rooms,
+    return render_template("rooms_allocation.html", 
+                         all_rooms=all_rooms,
                          patients_for_allocation=patients_for_allocation,
                          occupied_patients=occupied_patients,
-                         new_patient_id=new_patient_id, today=today)
+                         new_patient_id=new_patient_id, 
+                         today=today)
 
 @app.route("/allocate_room", methods=["POST"])
 def allocate_room():
@@ -546,6 +557,7 @@ def allocate_room():
     
     return redirect("/rooms")
 
+
 @app.route("/deallocate_room/<int:patient_id>")
 def deallocate_room(patient_id):
     if "user" not in session:
@@ -556,18 +568,44 @@ def deallocate_room(patient_id):
         flash("Database connection error.", "danger")
         return redirect("/rooms")
     
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
+        # First, get patient name for the success message
+        cursor.execute("SELECT full_name FROM patients WHERE patient_id = %s", (patient_id,))
+        patient = cursor.fetchone()
+        
+        if not patient:
+            flash("Patient not found.", "danger")
+            return redirect("/rooms")
+        
+        # Check if patient has active allocation
+        cursor.execute("""
+            SELECT allocation_id, room_id 
+            FROM room_allocation 
+            WHERE patient_id = %s AND status = 'Active'
+        """, (patient_id,))
+        allocation = cursor.fetchone()
+        
+        if not allocation:
+            flash(f"{patient['full_name']} has no active room allocation.", "warning")
+            return redirect("/rooms")
+        
+        # Update room allocation status to Released
         cursor.execute("""
             UPDATE room_allocation 
             SET status = 'Released', release_date = CURDATE()
             WHERE patient_id = %s AND status = 'Active'
         """, (patient_id,))
+        
         conn.commit()
-        flash("Room deallocated successfully.", "success")
+        
+        flash(f"✅ {patient['full_name']} successfully removed from room!", "success")
+        
     except mysql.connector.Error as err:
+        conn.rollback()
         flash(f"Error deallocating room: {err}", "danger")
+        print(f"ERROR in deallocate_room: {err}")
     finally:
         cursor.close()
         conn.close()
@@ -653,7 +691,6 @@ def generate_invoice():
 
     if request.method == "POST":
         try:
-            # YAHAN FIELD NAMES MATCH KARO HTML SE
             patient_id_form = request.form.get('patient_id')
             bill_date = request.form.get('bill_date')
             amount_due = request.form.get('amount_due')  # ← HTML mein name="amount_due"
