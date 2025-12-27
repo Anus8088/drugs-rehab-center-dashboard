@@ -693,6 +693,17 @@ def generate_invoice():
             return redirect(request.url)
 
         try:
+<<<<<<< HEAD
+=======
+            patient_id_form = request.form.get('patient_id')
+            bill_date = request.form.get('bill_date')
+            amount_due = request.form.get('amount_due')  # ← HTML mein name="amount_due"
+            
+            if not all([patient_id_form, bill_date, amount_due]):
+                flash("Please fill all required fields.", "danger")
+                return redirect(request.url)
+            
+>>>>>>> 61670044c9ccda6b2835b9a48446ecc0ff0b053c
             amount_due_float = float(amount_due)
         except ValueError:
             flash("Invalid amount entered.", "danger")
