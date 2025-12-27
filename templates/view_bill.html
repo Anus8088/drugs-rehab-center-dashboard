@@ -43,6 +43,17 @@
             color: white;
             padding: 20px;
         }
+        .payment-history-section {
+            margin-top: 30px;
+        }
+        .payment-empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -50,7 +61,7 @@
         <h4>RehabCare+</h4>
         <a href="/dashboard">🏠 Dashboard</a>
         <a href="/add_patient">➕ Add Patient</a>
-        <a href="/patients">🧍 Patients List</a>
+        <a href="/patients">🧑 Patients List</a>
         <a href="/rooms">🛏 Rooms</a>
         <a href="/billing" class="active">💳 Billing</a>
         <a href="/medicine_history">💊 Medicine History</a>
@@ -92,16 +103,18 @@
                         </div>
                     </div>
                     
-                    <div style="margin-top: 30px;">
-                        <h4 style="margin-bottom: 15px; color: #10B981;">Payment History</h4>
+                    <!-- ✅ FIXED: Payment History Section -->
+                    <div class="payment-history-section">
+                        <h4 style="margin-bottom: 15px; color: #10B981;">💳 Payment History</h4>
                         
                         {% if payments and payments|length > 0 %}
                         <div class="table-scroll">
                             <table class="table-custom">
                                 <thead>
                                     <tr>
-                                        <th>Date</th>
-                                        <th>Amount</th>
+                                        <th>#</th>
+                                        <th>Payment Date</th>
+                                        <th>Amount Paid</th>
                                         <th>Method</th>
                                         <th>Recorded By</th>
                                     </tr>
@@ -109,23 +122,44 @@
                                 <tbody>
                                     {% for payment in payments %}
                                     <tr>
+                                        <td>{{ loop.index }}</td>
                                         <td>{{ payment.PAYMENT_DATE }}</td>
-                                        <td>PKR {{ payment.AMOUNT_PAID | int }}</td>
-                                        <td>{{ payment.PAYMENT_METHOD }}</td>
+                                        <td style="color: #10B981; font-weight: 600;">PKR {{ payment.AMOUNT_PAID | int }}</td>
+                                        <td>
+                                            {% if payment.PAYMENT_METHOD == 'Cash' %}💵
+                                            {% elif payment.PAYMENT_METHOD == 'Card' %}💳
+                                            {% elif payment.PAYMENT_METHOD == 'Bank Transfer' %}🏦
+                                            {% else %}💰{% endif %}
+                                            {{ payment.PAYMENT_METHOD }}
+                                        </td>
                                         <td>{{ payment.RECORDED_BY }}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
+                                <tfoot>
+                                    <tr style="background: rgba(16, 185, 129, 0.1); font-weight: 600;">
+                                        <td colspan="2" style="text-align: right;">Total Paid:</td>
+                                        <td style="color: #10B981;">PKR {{ (bill.BILL_AMOUNT - bill.PENDING_AMOUNT) | int }}</td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                         {% else %}
-                        <p style="text-align: center; color: var(--text-muted); padding: 20px; background: rgba(0,0,0,0.2); border-radius: 8px;">
-                            No payments recorded yet. Click "Record Payment" above to add a payment.
-                        </p>
+                        <div class="payment-empty-state">
+                            <p style="font-size: 1.2em; margin-bottom: 10px;">📋 No Payment Records Found</p>
+                            <p style="opacity: 0.7;">No payments have been recorded for this invoice yet.</p>
+                            {% if bill.PENDING_AMOUNT > 0 %}
+                            <a href="/record_payment/{{ bill.BILL_ID }}" class="action-btn view-btn" style="display: inline-block; margin-top: 15px; background: #FBBF24; color: var(--darker-blue); text-decoration: none;">
+                                💵 Record First Payment
+                            </a>
+                            {% endif %}
+                        </div>
                         {% endif %}
                     </div>
                 </div>
 
+                <!-- Right Side Summary -->
                 <div style="flex: 1; padding-left: 20px;">
                     <div class="invoice-summary-box">
                         <h5>Total Bill Amount</h5>
@@ -133,13 +167,20 @@
                     </div>
 
                     <div class="total-box" style="background: #10B981;">
-                        Total Paid: PKR {{ (bill.BILL_AMOUNT - bill.PENDING_AMOUNT) | int }}
+                        ✅ Total Paid: PKR {{ (bill.BILL_AMOUNT - bill.PENDING_AMOUNT) | int }}
                     </div>
 
+                    {% if bill.PENDING_AMOUNT > 0 %}
                     <div class="pending-box">
-                        <h3 style="margin: 0;">Balance Due</h3>
+                        <h3 style="margin: 0;">⏳ Balance Due</h3>
                         <h1 style="margin: 5px 0 0 0; color: white;">PKR {{ bill.PENDING_AMOUNT | int }}</h1>
                     </div>
+                    {% else %}
+                    <div class="total-box" style="background: #10B981; padding: 20px;">
+                        <h3 style="margin: 0; color: white;">✅ Paid in Full</h3>
+                        <p style="margin: 5px 0 0 0; opacity: 0.9;">All payments received</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             

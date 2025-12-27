@@ -76,6 +76,8 @@ def logout():
 
 # ==================== DASHBOARD ====================
 
+# ==================== DASHBOARD ====================
+
 @app.route("/dashboard")
 def dashboard():
     if "user" not in session:
@@ -91,8 +93,8 @@ def dashboard():
     recent_patients = []
     
     try:
-        # Total admitted patients
-        cursor.execute("SELECT COUNT(*) as total FROM patients WHERE status IN ('Admitted', 'Discharge-Planned')")
+        # Total ACTIVE patients
+        cursor.execute("SELECT COUNT(*) as total FROM patients WHERE status = 'Admitted'")
         stats['total_patients'] = cursor.fetchone()['total']
         
         # Total users (staff)
@@ -111,12 +113,13 @@ def dashboard():
         cursor.execute("SELECT COUNT(*) as pending FROM billing WHERE status IN ('Pending', 'Overdue')")
         stats['pending_bills'] = cursor.fetchone()['pending']
         
-        # Recent patients
+        # Recent patients (Admitted)
         cursor.execute("""
             SELECT p.patient_id, p.patient_code, p.full_name, p.admission_date, 
                    p.status, b.branch_name
             FROM patients p
             JOIN branches b ON p.branch_id = b.branch_id
+            WHERE p.status = 'Admitted'
             ORDER BY p.admission_date DESC
             LIMIT 10
         """)
@@ -440,18 +443,27 @@ def rooms_allocation():
         cursor.execute(rooms_query)
         all_rooms = cursor.fetchall()
         
-        # Get patients for allocation with their branch info
+        # ✅ FIXED: Get patients WITHOUT active room allocation
         patients_query = """
             SELECT p.patient_id, p.full_name, p.patient_code, p.branch_id,
                    b.branch_name
             FROM patients p
             JOIN branches b ON p.branch_id = b.branch_id
-            LEFT JOIN room_allocation ra ON p.patient_id = ra.patient_id AND ra.status = 'Active'
-            WHERE p.status = 'Admitted' AND ra.allocation_id IS NULL
+            LEFT JOIN room_allocation ra ON p.patient_id = ra.patient_id 
+                AND ra.status = 'Active'
+            WHERE p.status = 'Admitted' 
+                AND ra.allocation_id IS NULL
             ORDER BY p.full_name
         """
         cursor.execute(patients_query)
         patients_for_allocation = cursor.fetchall()
+        
+        # ✅ DEBUG: Print patients found
+        print(f"=== PATIENTS FOR ALLOCATION ===")
+        print(f"Found {len(patients_for_allocation)} unallocated patients")
+        for pat in patients_for_allocation:
+            print(f"- {pat['full_name']} (ID: {pat['patient_id']})")
+        print("================================")
         
         # Get occupied patients with room info
         occupied_query = """
@@ -475,10 +487,12 @@ def rooms_allocation():
         cursor.close()
         conn.close()
     
-    return render_template("rooms_allocation.html", all_rooms=all_rooms,
+    return render_template("rooms_allocation.html", 
+                         all_rooms=all_rooms,
                          patients_for_allocation=patients_for_allocation,
                          occupied_patients=occupied_patients,
-                         new_patient_id=new_patient_id, today=today)
+                         new_patient_id=new_patient_id, 
+                         today=today)
 
 @app.route("/allocate_room", methods=["POST"])
 def allocate_room():
@@ -546,6 +560,7 @@ def allocate_room():
     
     return redirect("/rooms")
 
+
 @app.route("/deallocate_room/<int:patient_id>")
 def deallocate_room(patient_id):
     if "user" not in session:
@@ -556,18 +571,44 @@ def deallocate_room(patient_id):
         flash("Database connection error.", "danger")
         return redirect("/rooms")
     
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     try:
+        # First, get patient name for the success message
+        cursor.execute("SELECT full_name FROM patients WHERE patient_id = %s", (patient_id,))
+        patient = cursor.fetchone()
+        
+        if not patient:
+            flash("Patient not found.", "danger")
+            return redirect("/rooms")
+        
+        # Check if patient has active allocation
+        cursor.execute("""
+            SELECT allocation_id, room_id 
+            FROM room_allocation 
+            WHERE patient_id = %s AND status = 'Active'
+        """, (patient_id,))
+        allocation = cursor.fetchone()
+        
+        if not allocation:
+            flash(f"{patient['full_name']} has no active room allocation.", "warning")
+            return redirect("/rooms")
+        
+        # Update room allocation status to Released
         cursor.execute("""
             UPDATE room_allocation 
             SET status = 'Released', release_date = CURDATE()
             WHERE patient_id = %s AND status = 'Active'
         """, (patient_id,))
+        
         conn.commit()
-        flash("Room deallocated successfully.", "success")
+        
+        flash(f"✅ {patient['full_name']} successfully removed from room!", "success")
+        
     except mysql.connector.Error as err:
+        conn.rollback()
         flash(f"Error deallocating room: {err}", "danger")
+        print(f"ERROR in deallocate_room: {err}")
     finally:
         cursor.close()
         conn.close()
@@ -629,77 +670,77 @@ def generate_invoice():
     if "user" not in session:
         return redirect("/login")
 
-    patient_id = request.args.get('patient_id')
     today = datetime.date.today().strftime('%Y-%m-%d')
-
     conn = get_db_connection()
-    if not conn:
-        flash("Database connection error.", "danger")
-        return redirect("/billing")
-
     cursor = conn.cursor(dictionary=True)
 
-    try:
-        cursor.execute("""
-            SELECT patient_id AS PATIENT_ID, full_name AS FULL_NAME
-            FROM patients
-            WHERE status IN ('Admitted', 'Discharge-Planned')
-            ORDER BY full_name
-        """)
-        patients = cursor.fetchall()
-    except mysql.connector.Error as err:
-        flash(f"Error fetching patients: {err}", "danger")
-        patients = []
+    # Fetch all admitted patients
+    cursor.execute("""
+        SELECT patient_id AS PATIENT_ID, full_name AS FULL_NAME
+        FROM patients
+        WHERE status IN ('Admitted', 'Discharge-Planned')
+        ORDER BY full_name
+    """)
+    patients = cursor.fetchall()
 
     if request.method == "POST":
+        patient_id_form = request.form.get('patient_id')
+        bill_date = request.form.get('bill_date')
+        amount_due = request.form.get('amount_due')
+
+        if not all([patient_id_form, bill_date, amount_due]):
+            flash("Please fill all required fields.", "danger")
+            return redirect(request.url)
+
         try:
-            # YAHAN FIELD NAMES MATCH KARO HTML SE
-            patient_id_form = request.form.get('patient_id')
-            bill_date = request.form.get('bill_date')
-            amount_due = request.form.get('amount_due')  # ← HTML mein name="amount_due"
-            
-            if not all([patient_id_form, bill_date, amount_due]):
-                flash("Please fill all required fields.", "danger")
-                return redirect(request.url)
-            
             amount_due_float = float(amount_due)
+        except ValueError:
+            flash("Invalid amount entered.", "danger")
+            return redirect(request.url)
 
-            # Get patient's branch
-            cursor.execute(
-                "SELECT branch_id FROM patients WHERE patient_id = %s",
-                (patient_id_form,)
-            )
-            branch_result = cursor.fetchone()
-
-            if not branch_result:
-                flash("Patient not found.", "danger")
-                return redirect("/billing")
-
-            branch_id = branch_result['branch_id']
-
-            # Insert billing record
+        try:
             cursor.execute("""
-                INSERT INTO billing (
-                    patient_id, branch_id, bill_date,
-                    amount_due, amount_paid, due_amount, status
-                )
-                VALUES (%s, %s, %s, %s, 0, %s, 'Pending')
-            """, (
-                patient_id_form,
-                branch_id,
-                bill_date,
-                amount_due_float,
-                amount_due_float
-            ))
+                SELECT bill_id, amount_due, amount_paid, due_amount
+                FROM billing
+                WHERE patient_id = %s AND status IN ('Pending', 'Overdue')
+                ORDER BY bill_date DESC
+                LIMIT 1
+            """, (patient_id_form,))
+            existing_bill = cursor.fetchone()
 
-            bill_id = cursor.lastrowid
+            if existing_bill:
+                new_due = amount_due_float - existing_bill['amount_paid']
+                cursor.execute("""
+                    UPDATE billing
+                    SET amount_due = %s,
+                        due_amount = %s,
+                        bill_date = %s,
+                        status = CASE WHEN %s <= 0 THEN 'Paid' ELSE 'Pending' END
+                    WHERE bill_id = %s
+                """, (
+                    amount_due_float,
+                    new_due,
+                    bill_date,
+                    new_due,
+                    existing_bill['bill_id']
+                ))
+                bill_id = existing_bill['bill_id']
+            else:
+                # Insert a new bill
+                cursor.execute("SELECT branch_id FROM patients WHERE patient_id = %s", (patient_id_form,))
+                branch_result = cursor.fetchone()
+                branch_id = branch_result['branch_id']
+
+                cursor.execute("""
+                    INSERT INTO billing (patient_id, branch_id, bill_date, amount_due, amount_paid, due_amount, status)
+                    VALUES (%s, %s, %s, %s, 0, %s, 'Pending')
+                """, (patient_id_form, branch_id, bill_date, amount_due_float, amount_due_float))
+                bill_id = cursor.lastrowid
+
             conn.commit()
-
             flash("Invoice generated successfully!", "success")
             return redirect(url_for('view_bill', bill_id=bill_id))
 
-        except ValueError:
-            flash("Invalid amount. Please enter a valid number.", "danger")
         except mysql.connector.Error as err:
             conn.rollback()
             flash(f"Error generating invoice: {err}", "danger")
@@ -707,15 +748,8 @@ def generate_invoice():
             cursor.close()
             conn.close()
 
-    cursor.close()
-    conn.close()
-    return render_template(
-        "generate_invoice.html",
-        patients=patients,
-        patient_id=patient_id,
-        today=today
-    )
-    
+    return render_template("generate_invoice.html", patients=patients, today=today)
+
 @app.route("/record_payment/<int:bill_id>", methods=["GET", "POST"])
 def record_payment(bill_id):
     if "user" not in session:
@@ -799,6 +833,7 @@ def record_payment(bill_id):
         invoice=invoice,
         today=today
     )
+
 @app.route("/view_bill/<int:bill_id>")
 def view_bill(bill_id):
     if "user" not in session:
@@ -812,11 +847,11 @@ def view_bill(bill_id):
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # Get bill details
+        # Get bill details with uppercase column names
         cursor.execute("""
             SELECT b.bill_id as BILL_ID,
-                   DATE_FORMAT(b.bill_date,'%Y-%m-%d') as ISSUE_DATE,
-                   DATE_FORMAT(DATE_ADD(b.bill_date, INTERVAL 30 DAY),'%Y-%m-%d') as DUE_DATE,
+                   DATE_FORMAT(b.bill_date, '%Y-%m-%d') as ISSUE_DATE,
+                   DATE_FORMAT(DATE_ADD(b.bill_date, INTERVAL 30 DAY), '%Y-%m-%d') as DUE_DATE,
                    b.amount_due as BILL_AMOUNT,
                    b.amount_paid as AMOUNT_PAID,
                    b.due_amount as PENDING_AMOUNT,
@@ -835,10 +870,11 @@ def view_bill(bill_id):
             flash("Invoice not found.", "danger")
             return redirect("/billing")
 
+        # Add invoice number and description
         bill['INVOICE_NUMBER'] = f"INV-{bill['BILL_ID']:06d}"
         bill['DESCRIPTION'] = "Rehabilitation Services"
 
-        # ✅ FIX: Get payment history with UPPERCASE column names
+        # ✅ GET PAYMENT HISTORY with uppercase column names
         cursor.execute("""
             SELECT DATE_FORMAT(py.payment_date, '%Y-%m-%d') as PAYMENT_DATE,
                    py.amount as AMOUNT_PAID,
@@ -849,24 +885,32 @@ def view_bill(bill_id):
             WHERE py.bill_id = %s
             ORDER BY py.payment_date DESC
         """, (bill_id,))
+        
         payments = cursor.fetchall()
         
-        # ✅ DEBUG: Check if payments are being fetched
-        print(f"=== PAYMENTS FOR BILL {bill_id} ===")
-        print(f"Found {len(payments)} payments")
-        for p in payments:
-            print(p)
-        print("===================================")
+        # ✅ DEBUG OUTPUT
+        print("=" * 50)
+        print(f"VIEW BILL DEBUG - Bill ID: {bill_id}")
+        print(f"Bill found: {bill['INVOICE_NUMBER']}")
+        print(f"Total payments found: {len(payments)}")
+        if payments:
+            print("Payment details:")
+            for p in payments:
+                print(f"  - Date: {p['PAYMENT_DATE']}, Amount: {p['AMOUNT_PAID']}, Method: {p['PAYMENT_METHOD']}")
+        else:
+            print("  ⚠️ NO PAYMENTS FOUND")
+        print("=" * 50)
 
     except mysql.connector.Error as err:
         flash(f"Error loading invoice: {err}", "danger")
+        print(f"ERROR in view_bill: {err}")
         return redirect("/billing")
     finally:
         cursor.close()
         conn.close()
 
+    # ✅ IMPORTANT: Pass BOTH bill and payments to template
     return render_template("view_bill.html", bill=bill, payments=payments)
-
 
 # ==================== MEDICINE MANAGEMENT ====================
 
@@ -1027,7 +1071,6 @@ def record_dose():
     
     if request.method == "POST":
         try:
-            # ❌ NO start_transaction here
             
             cursor.execute("""
                 SELECT stock_quantity 
